@@ -28,11 +28,23 @@ tilesheet_0          tilesheet_1                tiletable
 [[0,1,2,3],    +     [[0,1],            =       [0_0, 0_1, ..., 0_7, 1_0, 1_1, ..., 1_5]
  [4,5,6,7]]           [2,3],
                       [4,5]]
+
+if any tile in the tilesheet is empty (all transparent), then that tile is 
+skipped, but tile data is still contiguous.
 '''
 
 
+def lookat_tile_i(tiletable, i):
+    for j in range(8):
+        res = []
+        r0 = tiletable[i,j]
+        r1 = tiletable[i,j+8]
+        for _ in range(8):
+            res.append((r0 & 1) | ((r1 & 1) << 1))
+            r0 >>= 1
+            r1 >>= 1
 
-
+        print(res)
 
 help = "Usage: python ./aseprite_indexed_to_ppu.py [options] <tilesheet_0.png> ... <tilesheet_n.png>\n" \
 "options:\n" \
@@ -55,19 +67,20 @@ cwd = getcwd()
 #   5. The sum of all non-empty 8x8 tiles in all tilesheets does not exceed
 #      256 (the PPU tiletable capacity)
 
-paths = ["" for _ in range(len(sys.argv) - 1)]
+paths = []
+nonempty_tiles = []
 total_nonempty_tiles = 0
 
 for i in range(len(sys.argv) - 1):
-    if (cwd + "/" + sys.argv[i + 1]) in paths:
+    if cwd + "/" + sys.argv[i + 1] in paths:
         continue
 
-    paths[i] = cwd + "/" + sys.argv[i + 1]
+    paths.append(cwd + "/" + sys.argv[i + 1])
 
-    if not path.exists(paths[i]):
+    if not path.exists(paths[-1]):
         raise FileNotFoundError("Could not find " + sys.argv[-1] + "! Aborting program.")
     
-    with Image.open(paths[i]) as ts:
+    with Image.open(paths[-1]) as ts:
         if ts.mode != "P":
             raise AssertionError("Image " + sys.argv[i + 1] + " does not have Pillow's color mode \"P\"")
                 
@@ -80,36 +93,44 @@ for i in range(len(sys.argv) - 1):
         if(np.min(ts) < 0 or np.max(ts) > 3):
             raise ValueError("Image " + sys.argv[i + 1] + " has an index not in range [0, 3]")
         
-        tile_sum = convolve2d(ts, in2=np.ones((8,8), dtype=np.uint8), mode='valid')[::8, ::8]
-        total_nonempty_tiles += np.sum(tile_sum > 0)
+
+        nonempty_tiles.append([0, (convolve2d(ts, in2=np.ones((8,8), dtype=np.uint8), mode='valid')[::8, ::8] > 0).astype(np.uint8)])
+        nonempty_tiles[-1][0] = np.sum(nonempty_tiles[-1][1], dtype=int)
+        total_nonempty_tiles += nonempty_tiles[-1][0]
 
     if total_nonempty_tiles > 256:
         raise RuntimeError("Sum of nonempty tiles among all provided tilesheets >256")
     
+    
 # now we process all the tilesheets into one tiletable
-tilesheet_path = cwd + "/" + sys.argv[-1]
-if not path.exists(tilesheet_path):
-    raise FileNotFoundError("Could not find " + sys.argv[-1])
 
-with Image.open(tilesheet_path) as ts:
-    w, h = ts.size
+# for each tile up to 256 tiles, store bit0 and bit1 of each flattened 8x8 tile.
+uncompressed_tiletable = np.zeros((256, 2, 8 * 8), dtype=np.uint8)
 
-    # for each tile up to 256 tiles, store bit0 and bit1 of each flattened 8x8 tile.
-    uncompressed_tiletable = np.zeros((256, 2, 8 * 8), dtype=np.uint8)
+total_tiles_filled = 0
+for i in range(len(paths)):
+    with Image.open(paths[i]) as ts:
+        w, h = ts.size
+        ts_arr = np.array(ts)
 
-    ts_arr = np.array(ts)
-    pixel_row, pixel_col = np.indices(ts_arr.shape)
+        # get the index of the tile each pixel belongs to, such that
+        # each tile is listed in left-to-right, top-to-bottom order
+        tile_idxs = (np.cumsum(nonempty_tiles[i][1]).reshape(nonempty_tiles[i][1].shape) - 1 + total_tiles_filled) * nonempty_tiles[i][1]
+        tile_px_idxs = np.kron(tile_idxs, np.ones((8,8), dtype=np.uint8))
+        offset_px_idxs = np.tile(np.arange(64, dtype=np.uint8).reshape((8,8)), (h // 8, w // 8))
 
-    # get the index of the tile each pixel belongs to, such that
-    # each tile is listed in left-to-right, top-to-bottom order
-    tile_idxs = pixel_row // 8 * (w // 8) + pixel_col // 8
-    offset_idxs = np.tile(np.arange(64, dtype=int).reshape((8,8)), (h // 8, w // 8))
+        valid_tile_pxs = np.where(np.kron(nonempty_tiles[i][1], np.ones((8,8), dtype=np.uint8)) == 1)
 
-    # split the tiles into bit0 and bit1
-    uncompressed_tiletable[tile_idxs, 0, offset_idxs] = np.bitwise_and(ts_arr, 0b1)
-    uncompressed_tiletable[tile_idxs, 1, offset_idxs] = np.bitwise_and(np.right_shift(ts_arr, 1), 0b1)
+        # split the tiles into bit0 and bit1
+        uncompressed_tiletable[tile_px_idxs[valid_tile_pxs], 0, offset_px_idxs[valid_tile_pxs]] = np.bitwise_and(ts_arr[valid_tile_pxs], 0b1)
+        uncompressed_tiletable[tile_px_idxs[valid_tile_pxs], 1, offset_px_idxs[valid_tile_pxs]] = np.bitwise_and(np.right_shift(ts_arr[valid_tile_pxs], 1), 0b1)
 
-    # packbits into one uint8 per row
-    compressed_tiletable = np.packbits(uncompressed_tiletable.reshape(256, 2, 8, 8), axis=3, bitorder='little').reshape((256, 16))
+        total_tiles_filled += nonempty_tiles[i][0]
 
-    tt_bytes = compressed_tiletable.tobytes()
+
+# packbits into one uint8 per row and convert to bytes
+compressed_tiletable = np.packbits(uncompressed_tiletable.reshape(256, 2, 8, 8), axis=3, bitorder='little').reshape((256, 16))
+tt_bytes = compressed_tiletable.tobytes()
+
+with open("tiletable.txt", "wb") as f:
+    f.write(tt_bytes)

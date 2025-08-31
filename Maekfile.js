@@ -112,6 +112,7 @@ if (maek.OS === 'windows') {
 // objFileBase (optional): base name object file to produce (if not supplied, set to options.objDir + '/' + cppFile without the extension)
 //returns objFile: objFileBase + a platform-dependant suffix ('.o' or '.obj')
 const game_objs = [
+	maek.CPP('TileTable.cpp'),
 	maek.CPP('PlayMode.cpp'),
 	maek.CPP('PPU466.cpp'),
 	maek.CPP('main.cpp'),
@@ -120,7 +121,7 @@ const game_objs = [
 	maek.CPP('data_path.cpp'),
 	maek.CPP('Mode.cpp'),
 	maek.CPP('gl_compile_program.cpp'),
-	maek.CPP('GL.cpp')
+	maek.CPP('GL.cpp'),
 ];
 
 //the '[exeFile =] LINK(objFiles, exeFileBase, [, options])' links an array of objects into an executable:

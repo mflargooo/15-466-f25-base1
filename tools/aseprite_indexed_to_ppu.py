@@ -1,4 +1,4 @@
-from os import path, getcwd
+from os import path, getcwd, mkdir
 import sys
 from PIL import Image
 
@@ -128,9 +128,12 @@ for i in range(len(paths)):
         total_tiles_filled += nonempty_tiles[i][0]
 
 
-# packbits into one uint8 per row and convert to bytes
-compressed_tiletable = np.packbits(uncompressed_tiletable.reshape(256, 2, 8, 8), axis=3, bitorder='little').reshape((256, 16))
+# packbits into one uint8 per row, flip rows because PPU indexes and numpy index image rows differently, and convert to bytes
+compressed_tiletable = np.packbits(uncompressed_tiletable.reshape(256, 2, 8, 8), axis=3, bitorder='little')[:,:,::-1].reshape((256, 16))
 tt_bytes = compressed_tiletable.tobytes()
 
-with open("tiletable.txt", "wb") as f:
+if not path.exists("./assets"):
+    mkdir("./assets")
+    
+with open("assets/tiletable.tt", "wb") as f:
     f.write(tt_bytes)

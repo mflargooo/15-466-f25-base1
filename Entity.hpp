@@ -1,3 +1,5 @@
+# pragma once
+
 #include "Sprites.hpp"
 #include <vector>
 #include <unordered_map>
@@ -9,22 +11,24 @@
 struct Entity {
     // within a Entity::Sprite, x and y of PPU466::Sprite are offsets 
     // from the Entity::position
-    std::array < PPU466::Sprite, 4 > reserved;
+    public:
+        std::array < PPU466::Sprite, 4 > reserved;
 
-    glm::highp_vec2 position = { 0.f, 0.f };
-    
-    std::unordered_map < std::string, std::shared_ptr < Sprite > > spritesheet;
-    std::vector < PPU466::Sprite > active_sprite;
+        glm::highp_vec2 position = { 0.f, 0.f };
+        
+        std::unordered_map < std::string, std::shared_ptr< Sprite > > spritesheet;
+        std::shared_ptr< Sprite > active_sprite;
+        std::vector < PPU466::Sprite > active_ppu_sprite;
 
+        void assign_sprite(std::string state, std::shared_ptr < Sprite > sprite);
+        void set_sprite(std::string state);
+        virtual void update_sprite();
 
-    void assign_sprite(std::string state, std::shared_ptr < Sprite > sprite);
-    void set_sprite(std::string state);
-
-    std::function< void(float) > on_update = nullptr;
-    void update(float elapsed) { if (on_update) on_update(elapsed); };
+        std::function< void(float) > on_update = nullptr;
+        void update(float elapsed) { if (on_update) on_update(elapsed); update_sprite(); };
 };
 
-typedef std::unordered_map < std::string, std::shared_ptr< Entity > > EntityPrefabs;
+typedef std::unordered_map< std::string, std::shared_ptr< Entity > > EntityPrefabs;
 
 namespace Entities {
     struct Player : Entity {
@@ -36,12 +40,12 @@ namespace Entities {
     };
 
     struct Bullet : Entity {
-        float travel_speed = 1.f;
-        glm::vec2 direction = { 0.f, 1.f };
+        float travel_speed = 50.f;
+        glm::vec2 direction = glm::vec2(0.f);
     };
 
     struct Enemy : Entity {
-        float move_speed = 10.f;
-        float attack_speed = 10.f;
+        float move_speed = 20.f;
+        float attack_speed = 3.f;
     };
 }

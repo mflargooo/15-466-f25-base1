@@ -1,6 +1,8 @@
 #include "PPU466.hpp"
 #include "Mode.hpp"
 
+#include "Entity.hpp"
+
 #include <glm/glm.hpp>
 
 #include <vector>
@@ -30,6 +32,9 @@ struct PlayMode : Mode {
 	//player position:
 	glm::vec2 player_at = glm::vec2(0.0f);
 	*/
+
+	std::shared_ptr< Entities::Player > player;
+	std::vector< std::shared_ptr< Entity > > active_entities;
 
 	//----- drawing handled by PPU466 -----
 

@@ -1,26 +1,46 @@
-#include "PPU466.hpp"
+#include "Sprites.hpp"
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <string>
+#include <memory>
 
 struct Entity {
-    private:
-        uint8_t max_sprite_tiles = 0;
+    // within a Entity::Sprite, x and y of PPU466::Sprite are offsets 
+    // from the Entity::position
+    std::array < PPU466::Sprite, 4 > reserved;
 
-    public:
-        std::string name;
+    std::pair < int8_t, int8_t > position = { (int8_t) 0, (int8_t) 0 };
+    
+    std::unordered_map < std::string, std::shared_ptr < Sprite > > spritesheet;
+    std::vector < PPU466::Sprite > active_sprite;
 
-        struct Sprite {
-            std::vector< uint8_t > tile_idxs;
-            std::vector< std::pair< uint8_t, uint8_t > > tile_offsets;
-        };
+    void assign_sprite(std::string state, std::shared_ptr < Sprite > sprite);
+    void set_sprite(std::string state);
 
-        std::map < std::string, Sprite > sprites;
-        std::vector < PPU466::Sprite& > ppu_sprite_ref;
-        
-        Entity(const std::string& name);
-        
-        void add_sprite(std::string state, Sprite sprite);
-        void change_sprite(std::string state);
-        void reserve_sprite_ref(std::array< PPU466::Sprite, 64 >::iterator& ref);
+    std::function< void(float) > on_update;
+    void update(float elapsed) { if (on_update) on_update(elapsed); };
+
+    Entity(std::function < void(float) > on_update) : on_update(on_update) {};
 };
+
+typedef std::unordered_map < std::string, std::shared_ptr< Entity > > EntityPrefabs;
+
+namespace Entities {
+    struct Player : Entity {
+        float move_speed = 10.f;
+        float attack_speed = 1.f;
+        float overheat = 0.f;
+
+        uint16_t buttons_pressed;
+    };
+
+    struct Bullet : Entity {
+        float travel_speed = 1.f;
+        glm::vec2 direction = { 0.f, 1.f };
+    };
+
+    struct Enemy : Entity {
+        float move_speed = 10.f;
+        float attack_speed = 10.f;
+    };
+}

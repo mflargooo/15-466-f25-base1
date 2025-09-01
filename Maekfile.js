@@ -113,6 +113,7 @@ if (maek.OS === 'windows') {
 //returns objFile: objFileBase + a platform-dependant suffix ('.o' or '.obj')
 const game_objs = [
 	maek.CPP('TileTable.cpp'),
+	maek.CPP('Entity.cpp'),
 	maek.CPP('PlayMode.cpp'),
 	maek.CPP('PPU466.cpp'),
 	maek.CPP('main.cpp'),

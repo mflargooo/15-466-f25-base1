@@ -16,8 +16,8 @@ void Entity::set_sprite(std::string state) {
     std::shared_ptr< Sprite > s = it->second;
     for (size_t i = 0; i < s->sprite.size; i++) {
         reserved[i].index = s->sprite.tile_idxs[i];
-        reserved[i].x = s->sprite.offsets[i].first;
-        reserved[i].y = s->sprite.offsets[i].second;
+        reserved[i].x = int8_t(s->sprite.offsets[i].x);
+        reserved[i].y = int8_t(s->sprite.offsets[i].y);
         reserved[i].attributes = (reserved[i].attributes & ~0x7) | (s->palette_idxs[i] & 0x7);
     }
 

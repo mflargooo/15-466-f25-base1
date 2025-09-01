@@ -8,6 +8,18 @@
 
 #include <random>
 
+// for static pointer casts
+#include <memory>
+
+// import fixed tiletable
+#include "TileTable.hpp"
+#include "Entity.hpp"
+#include "Sprites.hpp"
+
+	
+static GenericSpritePrefabs generic_sprites;
+static EntityPrefabs entities; 
+
 PlayMode::PlayMode() {
 	//TODO:
 	// you *must* use an asset pipeline of some sort to generate tiles.
@@ -27,7 +39,7 @@ PlayMode::PlayMode() {
 				distance[x+8*y] = uint8_t(std::max(0,std::min(255,int32_t( 255.0f * d ))));
 			}
 		}
-		for (uint32_t index = 0; index < 16; ++index) {
+		for (uint32_t index = 17; index < 17 + 16; ++index) {
 			PPU466::Tile tile;
 			uint8_t t = uint8_t((255 * index) / 16);
 			for (uint32_t y = 0; y < 8; ++y) {
@@ -48,60 +60,77 @@ PlayMode::PlayMode() {
 		}
 	}
 
-	//use sprite 32 as a "player":
-	ppu.tile_table[32].bit0 = {
-		0b01111110,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b01111110,
-	};
-	ppu.tile_table[32].bit1 = {
-		0b00000000,
-		0b00000000,
-		0b00011000,
-		0b00100100,
-		0b00000000,
-		0b00100100,
-		0b00000000,
-		0b00000000,
+	TileTable::import("../assets/tiletable.tt",  &ppu.tile_table);
+
+	std::array < glm::ivec2, 4 > typical_offsets = { 
+		glm::ivec2 ( 0, -8 ), 
+		glm::ivec2 (  -8, -8 ), 
+		glm::ivec2 ( 0, 0 ), 
+		glm::ivec2 (  -8, 0 ) 
 	};
 
-	//makes the outside of tiles 0-16 solid:
-	ppu.palette_table[0] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
+	// setup generic tank and bullet sprites to be used across player and enemies
+	GenericSprite tank_up, tank_down, tank_left, tank_right, bullet;
+	tank_up.tile_idxs = { (uint8_t) 0, (uint8_t) 1, (uint8_t) 8, (uint8_t) 9 };
+	tank_down.tile_idxs = { (uint8_t) 2, (uint8_t) 3, (uint8_t) 10, (uint8_t) 11 };
+	tank_left.tile_idxs = { (uint8_t) 4, (uint8_t) 5, (uint8_t) 12, (uint8_t) 13 };
+	tank_right.tile_idxs = { (uint8_t) 6, (uint8_t) 7, (uint8_t) 14, (uint8_t) 15 };
+
+	bullet.tile_idxs = { (uint8_t) 16 };
+
+	tank_up.offsets = tank_down.offsets = tank_left.offsets = tank_right.offsets = typical_offsets;
+	tank_up.size = tank_down.size = tank_left.size = tank_right.size = 4;
+
+	generic_sprites["tank_up"] = tank_up;
+	generic_sprites["tank_down"] = tank_down;
+	generic_sprites["tank_left"] = tank_left;
+	generic_sprites["tank_right"] = tank_right;
+
+	// create and populate player entity, and save it as a prefab
+	std::shared_ptr< Entities::Player > player = std::make_shared< Entities::Player >();
+	entities["player"] = player;
+
+	std::array< uint8_t, 4 > player_palette = {
+		(uint8_t) 7, (uint8_t) 7, (uint8_t) 7, (uint8_t) 7
 	};
 
-	//makes the center of tiles 0-16 solid:
-	ppu.palette_table[1] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
+	std::shared_ptr< Sprite > player_up = std::make_shared< Sprite >(Sprite(generic_sprites["tank_up"], player_palette));
+	std::shared_ptr< Sprite > player_down = std::make_shared< Sprite >(Sprite(generic_sprites["tank_down"], player_palette));
+	std::shared_ptr< Sprite > player_left = std::make_shared< Sprite >(Sprite(generic_sprites["tank_left"], player_palette));
+	std::shared_ptr< Sprite > player_right = std::make_shared< Sprite >(Sprite(generic_sprites["tank_right"], player_palette));
 
-	//used for the player:
-	ppu.palette_table[7] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0xff, 0xff, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
+	player->assign_sprite("up", player_up);
+	player->assign_sprite("down", player_down);
+	player->assign_sprite("left", player_left);
+	player->assign_sprite("right", player_right);
 
-	//used for the misc other sprites:
-	ppu.palette_table[6] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x88, 0x88, 0xff, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-	};
+	player->set_sprite("up");
 
+	player->on_update = [player](float elapsed) {
+		bool left_pressed = (player->buttons_pressed & 0b10000) >> 4;
+		bool right_pressed = (player->buttons_pressed & 0b1000) >> 3;
+		bool down_pressed = (player->buttons_pressed & 0b100) >> 2;
+		bool up_pressed = (player->buttons_pressed & 0b10) >> 1;
+		bool space_pressed = player->buttons_pressed & 0b1;
+		space_pressed;
+
+		int8_t dir_x = right_pressed - left_pressed;
+		int8_t dir_y = up_pressed - down_pressed;
+
+		if ((left_pressed || right_pressed) && !(down_pressed ^ up_pressed)) {
+			player->set_sprite(dir_x == 1 ? "right" : "left");
+		}
+		if ((down_pressed || up_pressed) && !(left_pressed ^ right_pressed)) {
+			player->set_sprite(dir_y == 1 ? "up" : "down");
+		}
+
+		player->position.x += dir_x * (dir_x ^ dir_y ? 1.f : .707f) * player->move_speed * elapsed;
+		player->position.y += dir_y * (dir_x ^ dir_y ? 1.f : .707f) * player->move_speed * elapsed;
+
+		// clamp player position to screen
+		player->position.x = std::max(0.f, std::min(player->position.x, (float) PPU466::BackgroundWidth * 4.f - 16.f));
+		player->position.y = std::max(0.f, std::min(player->position.y, (float) PPU466::BackgroundHeight * 4.f - 16.f));
+	};
 }
 
 PlayMode::~PlayMode() {
@@ -126,6 +155,9 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			down.downs += 1;
 			down.pressed = true;
 			return true;
+		} else if (evt.key.key == SDLK_SPACE) {
+			space.downs += 1;
+			space.pressed = true;
 		}
 	} else if (evt.type == SDL_EVENT_KEY_UP) {
 		if (evt.key.key == SDLK_LEFT) {
@@ -140,6 +172,9 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		} else if (evt.key.key == SDLK_DOWN) {
 			down.pressed = false;
 			return true;
+		} else if (evt.key.key == SDLK_SPACE) {
+			space.pressed = false;
+			return true;
 		}
 	}
 
@@ -147,17 +182,13 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
+	auto it = entities.find("player");
+	std::shared_ptr< Entities::Player > player = std::static_pointer_cast < Entities::Player >((it != entities.end()) ? it->second : nullptr);
+	if (player) {
+		player->buttons_pressed = ((left.pressed & 0b1) << 4) | ((right.pressed & 0b1) << 3) | ((down.pressed & 0b1) << 2) | ((up.pressed & 0b1) << 1) | (space.pressed & 0b1);
+		player->update(elapsed);
 
-	//slowly rotates through [0,1):
-	// (will be used to set background color)
-	background_fade += elapsed / 10.0f;
-	background_fade -= std::floor(background_fade);
-
-	constexpr float PlayerSpeed = 30.0f;
-	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
-	if (right.pressed) player_at.x += PlayerSpeed * elapsed;
-	if (down.pressed) player_at.y -= PlayerSpeed * elapsed;
-	if (up.pressed) player_at.y += PlayerSpeed * elapsed;
+	}
 
 	//reset button press counters:
 	left.downs = 0;
@@ -171,39 +202,25 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	//background color will be some hsv-like fade:
 	ppu.background_color = glm::u8vec4(
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 0.0f / 3.0f) ) ) ))),
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 1.0f / 3.0f) ) ) ))),
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 2.0f / 3.0f) ) ) ))),
+		0,
+		0,
+		0,
 		0xff
 	);
 
-	//tilemap gets recomputed every frame as some weird plasma thing:
-	//NOTE: don't do this in your game! actually make a map or something :-)
-	for (uint32_t y = 0; y < PPU466::BackgroundHeight; ++y) {
-		for (uint32_t x = 0; x < PPU466::BackgroundWidth; ++x) {
-			//TODO: make weird plasma thing
-			ppu.background[x+PPU466::BackgroundWidth*y] = ((x+y)%16);
-		}
+	for (size_t i = 0; i < PPU466::BackgroundHeight * PPU466::BackgroundWidth; i++) {
+		ppu.background[i] = 255;
 	}
 
-	//background scroll:
-	ppu.background_position.x = int32_t(-0.5f * player_at.x);
-	ppu.background_position.y = int32_t(-0.5f * player_at.y);
+	auto it = entities.find("player");
+	std::shared_ptr< Entity > player = std::static_pointer_cast < Entity >((it != entities.end()) ? it->second : nullptr);
 
 	//player sprite:
-	ppu.sprites[0].x = int8_t(player_at.x);
-	ppu.sprites[0].y = int8_t(player_at.y);
-	ppu.sprites[0].index = 32;
-	ppu.sprites[0].attributes = 7;
-
-	//some other misc sprites:
-	for (uint32_t i = 1; i < 63; ++i) {
-		float amt = (i + 2.0f * background_fade) / 62.0f;
-		ppu.sprites[i].x = int8_t(0.5f * float(PPU466::ScreenWidth) + std::cos( 2.0f * M_PI * amt * 5.0f + 0.01f * player_at.x) * 0.4f * float(PPU466::ScreenWidth));
-		ppu.sprites[i].y = int8_t(0.5f * float(PPU466::ScreenHeight) + std::sin( 2.0f * M_PI * amt * 3.0f + 0.01f * player_at.y) * 0.4f * float(PPU466::ScreenWidth));
-		ppu.sprites[i].index = 32;
-		ppu.sprites[i].attributes = 6;
-		if (i % 2) ppu.sprites[i].attributes |= 0x80; //'behind' bit
+	for (size_t i = 0; i < player->active_sprite.size(); i++) {
+		ppu.sprites[i].x = int8_t(player->position.x) - int8_t(player->active_sprite[i].x);
+		ppu.sprites[i].y = int8_t(player->position.y) - int8_t(player->active_sprite[i].y);
+		ppu.sprites[i].index = 	player->active_sprite[i].index;
+		ppu.sprites[i].attributes = player->active_sprite[i].attributes;
 	}
 
 	//--- actually draw ---

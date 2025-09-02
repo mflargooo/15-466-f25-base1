@@ -26,6 +26,7 @@ Arrow Left - Move Left
 Arrow Right - Move Right
 Arrow Down - Move Down
 Space - Shoot
+Escape - Quit
 
 How To Play:
 
@@ -34,6 +35,8 @@ Move around to dodge the incoming fire and survive as long as you can! If you ar
 Allow for some breaks in between your actions, and manage them carefully, to prevent your engine from becoming too hot. Build up too much heat and strain and your engine will overheat and you must wait for it to cool down completely.
 
 Keep track of your heat by taking note of the objects' in the scene. The redder the scene is, the hotter your engine; the greener it is, the cooler you are. If the scene is blue, you have overheated and you must sit idle for 5 seconds to cool down completely (to full green).
+
+If you run the game from the terminal, your score (the time you survive in seconds) is displayed.
 
 This game was built with [NEST](NEST.md).
 

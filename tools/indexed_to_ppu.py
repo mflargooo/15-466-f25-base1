@@ -5,8 +5,6 @@ from PIL import Image
 import numpy as np
 from scipy.signal import convolve2d
 
-import struct
-
 '''
 Takes a a sequence of PNG image generated in "Indexed" color mode and converts 
 into data that matches the tiletable defined in the PPU headers. A given image 
@@ -46,7 +44,7 @@ def lookat_tile_i(tiletable, i):
 
         print(res)
 
-help = "Usage: python ./aseprite_indexed_to_ppu.py [options] <tilesheet_0.png> ... <tilesheet_n.png>\n" \
+help = "Usage: python ./indexed_to_ppu.py [options] <tilesheet_0.png> ... <tilesheet_n.png>\n" \
 "options:\n" \
 "   -h              \t help\n" \
 

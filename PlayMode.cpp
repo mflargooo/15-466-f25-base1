@@ -12,6 +12,8 @@
 #include <memory>
 
 #include <algorithm>
+#include <chrono>
+#include <iomanip>
 
 
 // import fixed tiletable
@@ -26,12 +28,6 @@ static GenericSpritePrefabs generic_sprites;
 static EntityPrefabs entities; 
 
 PlayMode::PlayMode() {
-	//TODO:
-	// you *must* use an asset pipeline of some sort to generate tiles.
-	// don't hardcode them like this!
-	// or, at least, if you do hardcode them like this,
-	//  make yourself a script that spits out the code that you paste in here
-	//   and check that script into your repository.
 
 	TileTable::import("../assets/tiletable.tt",  &ppu.tile_table);
 
@@ -40,6 +36,40 @@ PlayMode::PlayMode() {
 		glm::ivec2 (  -8, -8 ), 
 		glm::ivec2 ( 0, 0 ), 
 		glm::ivec2 (  -8, 0 ) 
+	};
+
+	// generated with coolors.co
+
+	// normal heat
+	ppu.palette_table[0] = {
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
+		glm::u8vec4(0x91, 0xe3, 0x78, 0xff),
+		glm::u8vec4(0x5e, 0xce, 0x41, 0xff),
+		glm::u8vec4(0x2b, ~0x00, 0x25, 0xff),
+	};
+
+	// more overheated
+	ppu.palette_table[1] = {
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
+		glm::u8vec4(0xf3, 0x81, 0x38, 0xff),
+		glm::u8vec4(0xfe, 0x3e, 0x21, 0xff),
+		glm::u8vec4(~0x00, 0x2b, 0x25, 0xff),
+	};
+
+	// overheat recovery
+	ppu.palette_table[2] = {
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
+		glm::u8vec4(0x9c, 0xb3, 0xf2, 0xff),
+		glm::u8vec4(0x60, 0x84, 0xed, 0xff),
+		glm::u8vec4(0x2b, 0x25, ~0x00, 0xff),
+	};
+
+	// non-player bullets
+	ppu.palette_table[4] = {
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
+		glm::u8vec4(~0x0d, ~0x0a, ~0x0f, 0xff),
+		glm::u8vec4(~0x8d, ~0x8a, ~0x8f, 0xff),
+		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
 	};
 
 	// setup generic tank and bullet sprites to be used across player and enemies
@@ -78,18 +108,13 @@ PlayMode::PlayMode() {
 	generic_sprites["explosion_2"] = explosion_2;
 	generic_sprites["explosion_3"] = explosion_3;
 
-	std::array< uint8_t, 4 > player_palette = {
-		(uint8_t) 7, (uint8_t) 7, (uint8_t) 7, (uint8_t) 7
-	};
-
-
 	// create bullet prefab
 	std::shared_ptr< Entities::Bullet > bullet_prefab = std::make_shared< Entities::Bullet >();
 	entities["bullet"] = std::static_pointer_cast< Entity >(bullet_prefab);
 
 	bullet_prefab->collider.offset = glm::highp_vec2(0.f);
 	bullet_prefab->collider.radius = 5.f;
-	bullet_prefab->assign_sprite("0", std::make_shared< Sprite >(Sprite(generic_sprites["bullet"], player_palette)));
+	bullet_prefab->assign_sprite("0", std::make_shared< Sprite >(Sprite(generic_sprites["bullet"], { 3, 3, 3, 3 })));
 
 	bullet_prefab->set_sprite("0");
 
@@ -98,17 +123,18 @@ PlayMode::PlayMode() {
 	std::shared_ptr< Entities::Player > player_prefab = std::make_shared< Entities::Player >();
 	entities["player"] = std::static_pointer_cast< Entity >(player_prefab);
 
+	player_prefab->position = glm::highp_vec2(float(PPU466::ScreenWidth) * .5f - 8.f, float(PPU466::ScreenHeight) * .5f - 8.f);
 	player_prefab->collider.offset = glm::highp_vec2(0.f);
 	player_prefab->collider.radius = 20.f;
 
-	std::shared_ptr< Sprite > player_up = std::make_shared< Sprite >(Sprite(generic_sprites["tank_up"], player_palette));
-	std::shared_ptr< Sprite > player_down = std::make_shared< Sprite >(Sprite(generic_sprites["tank_down"], player_palette));
-	std::shared_ptr< Sprite > player_left = std::make_shared< Sprite >(Sprite(generic_sprites["tank_left"], player_palette));
-	std::shared_ptr< Sprite > player_right = std::make_shared< Sprite >(Sprite(generic_sprites["tank_right"], player_palette));
-	std::shared_ptr< Sprite > player_death_0 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_0"], player_palette));
-	std::shared_ptr< Sprite > player_death_1 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_1"], player_palette));
-	std::shared_ptr< Sprite > player_death_2 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_2"], player_palette));
-	std::shared_ptr< Sprite > player_death_3 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_3"], player_palette));
+	std::shared_ptr< Sprite > player_up = std::make_shared< Sprite >(Sprite(generic_sprites["tank_up"], { 3, 3, 3, 3}));
+	std::shared_ptr< Sprite > player_down = std::make_shared< Sprite >(Sprite(generic_sprites["tank_down"], { 3, 3, 3, 3}));
+	std::shared_ptr< Sprite > player_left = std::make_shared< Sprite >(Sprite(generic_sprites["tank_left"], { 3, 3, 3, 3}));
+	std::shared_ptr< Sprite > player_right = std::make_shared< Sprite >(Sprite(generic_sprites["tank_right"], { 3, 3, 3, 3}));
+	std::shared_ptr< Sprite > player_death_0 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_0"], { 3, 3, 3, 3}));
+	std::shared_ptr< Sprite > player_death_1 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_1"], { 3, 3, 3, 3}));
+	std::shared_ptr< Sprite > player_death_2 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_2"], { 3, 3, 3, 3}));
+	std::shared_ptr< Sprite > player_death_3 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_3"], { 3, 3, 3, 3}));
 
 	player_prefab->assign_sprite("up", player_up);
 	player_prefab->assign_sprite("down", player_down);
@@ -123,9 +149,13 @@ PlayMode::PlayMode() {
 
 	// add player as active entity
 	player = init_player(&entities, &active_entities);
+	srand(unsigned int(std::chrono::system_clock::now().time_since_epoch().count()));
 }
 
 PlayMode::~PlayMode() {
+	for (auto entity : entities) {
+		entity.second.reset();
+	}
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -150,6 +180,10 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		} else if (evt.key.key == SDLK_SPACE) {
 			space.downs += 1;
 			space.pressed = true;
+		} else if (evt.key.key == SDLK_ESCAPE) {
+			esc.downs += 1;
+			esc.pressed = true;
+			return true;
 		}
 	} else if (evt.type == SDL_EVENT_KEY_UP) {
 		if (evt.key.key == SDLK_LEFT) {
@@ -167,6 +201,9 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		} else if (evt.key.key == SDLK_SPACE) {
 			space.pressed = false;
 			return true;
+		} else if (evt.key.key == SDLK_ESCAPE) {
+			esc.pressed = false;
+			return true;
 		}
 	}
 
@@ -174,10 +211,48 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
-	if (auto weak_player = player.lock()) {
-		weak_player->buttons_pressed = ((left.pressed & 0b1) << 4) | ((right.pressed & 0b1) << 3) | ((down.pressed & 0b1) << 2) | ((up.pressed & 0b1) << 1) | (space.pressed & 0b1);
+	if (esc.pressed) {
+		Mode::set_current(nullptr);
+		std::cout << "You survived for " << std::setprecision(2) << game_time << " seconds!";
+		return;
 	}
+
+	if (auto p = player.lock())
+		p->buttons_pressed = ((left.pressed & 0b1) << 4) | ((right.pressed & 0b1) << 3) | ((down.pressed & 0b1) << 2) | ((up.pressed & 0b1) << 1) | (space.pressed & 0b1);
 	else return;
+
+	// spawn new projectiles on timer
+	static float proj_timer = 0.f;
+	static size_t bullet_cycle = 0;
+
+	if (proj_timer <= 0.f) {
+		std::weak_ptr< Entities::Bullet > weak_bullet;
+		if (active_entities.size() - 1 == MAX_PROJS) {
+			weak_bullet = std::static_pointer_cast< Entities::Bullet >(active_entities[1 + bullet_cycle]);
+			bullet_cycle += 1;
+
+		}
+		else {
+			weak_bullet = init_bullet(&entities, &active_entities);
+		}
+
+		if (auto bullet = weak_bullet.lock()) {
+			bullet->position.x = (float) rand() / (float) RAND_MAX < .5f ? 0.f : PPU466::ScreenWidth;
+			bullet->position.y = (float) rand() / (float) RAND_MAX < .5f ? 0.f : PPU466::ScreenHeight;
+
+			float angle = (float) rand() / (float) RAND_MAX * (float) M_PI * 2.f;
+			bullet->direction.x = std::cos(angle);
+			bullet->direction.y = std::sin(angle);
+
+			bullet->travel_speed += 4.f * std::cos(game_time * .25f) + game_time + ((float) rand() / (float) RAND_MAX - .5f) * 20.f;
+			bullet->travel_speed = std::max(30.f, std::min(bullet->travel_speed, 150.f));
+
+			proj_timer = spawn_proj_cooldown - std::min(game_time / 30.f, 2.f) + .5f * std::sin(game_time);
+		}
+	}
+	else {
+		proj_timer -= elapsed;
+	}
 
 	// update object positions
 	for (size_t i = 0; i < active_entities.size(); i++) {
@@ -205,11 +280,22 @@ void PlayMode::update(float elapsed) {
 		active_entities.end()
 	);
 
+	// update player palette as linear combination of "normal" to "overheat"
+	if (auto p = player.lock()) {
+		for (size_t i = 0; i < 4; i++) {
+			ppu.palette_table[3][i] = glm::u8vec4(glm::vec4(ppu.palette_table[0][i]) * (1.0f - p->overheat) + glm::vec4(ppu.palette_table[p->can_move ? 1 : 2][i]) * p->overheat);
+		}
+	}
+
 	//reset button press counters:
 	left.downs = 0;
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
+	space.downs = 0;
+	esc.downs = 0;
+
+	game_time += elapsed;
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -217,9 +303,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	//background color will be some hsv-like fade:
 	ppu.background_color = glm::u8vec4(
-		0,
-		0,
-		0,
+		0x0d,
+		0x0a,
+		0x0f,
 		0xff
 	);
 
@@ -228,17 +314,24 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	size_t sprites_drawn = 0;
+	// we will always draw the player
+	if (auto p = player.lock()) {
+		std::copy(p->active_ppu_sprite.begin(), p->active_ppu_sprite.end(), ppu.sprites.begin());
+		sprites_drawn += p->active_ppu_sprite.size();
+	}
+
 	static uint16_t entity_cycle = 0;
-	for (size_t i = 0; i < active_entities.size(); i++) {
+	for (size_t i = 1; i < active_entities.size(); i++) {
 		// No more space in the current PPU sprite lis
 		if (sprites_drawn >= 64) {
 			// start flashing entities
 			entity_cycle += 1;
-			entity_cycle %= active_entities.size();
+			entity_cycle %= (active_entities.size() - 1);
 			break;
 		}
 
-		Entity entity = *active_entities[(i + entity_cycle) % active_entities.size()];
+		assert((i + entity_cycle) % (active_entities.size() - 1) + 1 != 0);
+		Entity entity = *active_entities[(i + entity_cycle) % (active_entities.size() - 1) + 1];
 		std::copy(entity.active_ppu_sprite.begin(), entity.active_ppu_sprite.end(), ppu.sprites.begin() + sprites_drawn);
 		sprites_drawn += entity.active_ppu_sprite.size();
 	}
@@ -247,7 +340,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		entity_cycle = 0;
 
 		for (size_t i = sprites_drawn; i < 64; i++) {
-			ppu.sprites[i].y = 250;
+			ppu.sprites[i].y = 240;
 		}
 	}
 

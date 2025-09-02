@@ -23,7 +23,7 @@ struct PlayMode : Mode {
 	struct Button {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
-	} left, right, down, up, space;
+	} left, right, down, up, space, esc;
 
 	/*
 	//some weird background animation:
@@ -35,6 +35,11 @@ struct PlayMode : Mode {
 
 	std::weak_ptr< Entities::Player > player;
 	std::vector< std::shared_ptr< Entity > > active_entities;
+
+	float game_time = 0.f;
+	float spawn_proj_cooldown = 3.f;
+
+	const float MAX_PROJS = 20;
 
 	//----- drawing handled by PPU466 -----
 

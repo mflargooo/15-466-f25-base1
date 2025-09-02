@@ -40,6 +40,7 @@ struct Entity {
             on_update(elapsed); 
         }
         update_sprite();
+        
     }
     bool collides_with(std::shared_ptr< Entity > other);
     bool death(float elapsed) { 
@@ -60,6 +61,7 @@ namespace Entities {
         float move_speed = 30.f;
         float attack_speed = 1.f;
         float overheat = 0.f;
+        bool can_move = true;
 
         uint16_t buttons_pressed;
     };
@@ -67,10 +69,7 @@ namespace Entities {
     struct Bullet : Entity {
         float travel_speed = 50.f;
         glm::vec2 direction = glm::vec2(0.f);
-    };
 
-    struct Enemy : Entity {
-        float move_speed = 20.f;
-        float attack_speed = 3.f;
+        float init_time;
     };
 }

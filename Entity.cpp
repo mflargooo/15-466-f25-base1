@@ -30,17 +30,17 @@ void Entity::set_sprite(std::string state) {
     active_sprite = it->second;
     for (size_t i = 0; i < active_sprite->sprite.size; i++) {
         reserved[i].index = active_sprite->sprite.tile_idxs[i];
-        reserved[i].x = int8_t(active_sprite->sprite.offsets[i].x);
-        reserved[i].y = int8_t(active_sprite->sprite.offsets[i].y);
-        reserved[i].attributes = (reserved[i].attributes & ~0x7) | (active_sprite->palette_idxs[i] & 0x7);
+        reserved[i].x = uint8_t(active_sprite->sprite.offsets[i].x);
+        reserved[i].y = uint8_t(active_sprite->sprite.offsets[i].y);
+        reserved[i].attributes = (reserved[i].attributes & ~7) | (active_sprite->palette_idxs[i] & 7);
     }
 
     active_ppu_sprite = std::vector < PPU466::Sprite >(reserved.begin(), reserved.begin() + active_sprite->sprite.size);
 }
 
 void Entity::update_sprite() {
-    for (size_t i = 0; i < active_sprite->sprite.size; i++) {
-        active_ppu_sprite[i].x = int8_t(position.x) - int8_t(active_sprite->sprite.offsets[i].x);
-        active_ppu_sprite[i].y = int8_t(position.y) - int8_t(active_sprite->sprite.offsets[i].y);
+    for (size_t i = 0; i < active_ppu_sprite.size(); i++) {
+        active_ppu_sprite[i].x = uint8_t(position.x) - uint8_t(reserved[i].x);
+        active_ppu_sprite[i].y = uint8_t(position.y) - uint8_t(reserved[i].y);
     }
 };

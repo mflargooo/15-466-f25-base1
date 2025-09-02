@@ -15,7 +15,7 @@ struct GenericSprite {
 
 struct Sprite {
     const GenericSprite &sprite;
-    const std::array< uint8_t, 4 > &palette_idxs;
+    const std::array< uint8_t, 4 > palette_idxs;
 
     Sprite(const GenericSprite &sprite, const std::array< uint8_t, 4 > & palette_idxs) : sprite(sprite), palette_idxs(palette_idxs) {};
 };

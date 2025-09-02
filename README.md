@@ -36,7 +36,7 @@ Allow for some breaks in between your actions, and manage them carefully, to pre
 
 Keep track of your heat by taking note of the objects' in the scene. The redder the scene is, the hotter your engine; the greener it is, the cooler you are. If the scene is blue, you have overheated and you must sit idle for 5 seconds to cool down completely (to full green).
 
-If you run the game from the terminal, your score (the time you survive in seconds) is displayed.
+If you run the game from the terminal, your score (the time you survive in seconds) is displayed upon quitting (with the Escape key).
 
 This game was built with [NEST](NEST.md).
 

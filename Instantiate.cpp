@@ -85,6 +85,27 @@ std::weak_ptr< Entities::Player > init_player(EntityPrefabs *table, std::vector<
 			player->position.x = std::max(0.f, std::min(player->position.x, (float) PPU466::BackgroundWidth * 4.f - 16.f));
 			player->position.y = std::max(0.f, std::min(player->position.y, (float) PPU466::BackgroundHeight * 4.f - 16.f));
 		};
+
+		p->on_death = [weak_player](float time) {
+			std::shared_ptr< Entities::Player > player;
+			if (!(player = weak_player.lock())) return true;
+
+			if (time < .1f) {
+				player->set_sprite("death_0");
+			}
+			else if (time < .18f) {
+				player->set_sprite("death_1");
+				return false;
+			}
+			else if (time < .23f) {
+				player->set_sprite("death_2");
+			}
+			else if (time < .25f) {
+				player->set_sprite("death_3");
+			}
+			
+			return time > .26f;
+		};
 	}
 
     return weak_player;

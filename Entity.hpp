@@ -45,7 +45,9 @@ struct Entity {
     bool death(float elapsed) { 
         time_since_death += elapsed;
         if (on_death) {
-            return on_death(time_since_death);
+            bool res = on_death(time_since_death);
+            update_sprite();
+            return res;
         }
         else return true;
     };

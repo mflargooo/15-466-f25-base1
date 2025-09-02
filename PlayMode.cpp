@@ -51,10 +51,10 @@ PlayMode::PlayMode() {
 
 	bullet.tile_idxs = { (uint8_t) 16 };
 
-	explosion_0 = { (uint8_t) 16, (uint8_t) 17, (uint8_t) 24, (uint8_t) 25 };
-	explosion_1 = { (uint8_t) 26, (uint8_t) 27, (uint8_t) 28, (uint8_t) 29 };
-	explosion_2 = { (uint8_t) 28, (uint8_t) 29, (uint8_t) 32, (uint8_t) 33 };
-	explosion_3 = { (uint8_t) 30, (uint8_t) 31, (uint8_t) 34, (uint8_t) 35 };
+	explosion_0.tile_idxs = { (uint8_t) 17, (uint8_t) 18, (uint8_t) 25, (uint8_t) 26 };
+	explosion_1.tile_idxs = { (uint8_t) 19, (uint8_t) 20, (uint8_t) 27, (uint8_t) 28 };
+	explosion_2.tile_idxs = { (uint8_t) 21, (uint8_t) 22, (uint8_t) 29, (uint8_t) 30 };
+	explosion_3.tile_idxs = { (uint8_t) 23, (uint8_t) 24, (uint8_t) 31, (uint8_t) 32 };
 
 	tank_up.offsets = tank_down.offsets = tank_left.offsets = tank_right.offsets = typical_offsets;
 	explosion_0.offsets = explosion_1.offsets = explosion_2.offsets = explosion_3.offsets = typical_offsets;
@@ -73,9 +73,15 @@ PlayMode::PlayMode() {
 	generic_sprites["tank_right"] = tank_right;
 	generic_sprites["bullet"] = bullet;
 
+	generic_sprites["explosion_0"] = explosion_0;
+	generic_sprites["explosion_1"] = explosion_1;
+	generic_sprites["explosion_2"] = explosion_2;
+	generic_sprites["explosion_3"] = explosion_3;
+
 	std::array< uint8_t, 4 > player_palette = {
 		(uint8_t) 7, (uint8_t) 7, (uint8_t) 7, (uint8_t) 7
 	};
+
 
 	// create bullet prefab
 	std::shared_ptr< Entities::Bullet > bullet_prefab = std::make_shared< Entities::Bullet >();
@@ -99,11 +105,19 @@ PlayMode::PlayMode() {
 	std::shared_ptr< Sprite > player_down = std::make_shared< Sprite >(Sprite(generic_sprites["tank_down"], player_palette));
 	std::shared_ptr< Sprite > player_left = std::make_shared< Sprite >(Sprite(generic_sprites["tank_left"], player_palette));
 	std::shared_ptr< Sprite > player_right = std::make_shared< Sprite >(Sprite(generic_sprites["tank_right"], player_palette));
+	std::shared_ptr< Sprite > player_death_0 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_0"], player_palette));
+	std::shared_ptr< Sprite > player_death_1 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_1"], player_palette));
+	std::shared_ptr< Sprite > player_death_2 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_2"], player_palette));
+	std::shared_ptr< Sprite > player_death_3 = std::make_shared< Sprite >(Sprite(generic_sprites["explosion_3"], player_palette));
 
 	player_prefab->assign_sprite("up", player_up);
 	player_prefab->assign_sprite("down", player_down);
 	player_prefab->assign_sprite("left", player_left);
 	player_prefab->assign_sprite("right", player_right);
+	player_prefab->assign_sprite("death_0", player_death_0);
+	player_prefab->assign_sprite("death_1", player_death_1);
+	player_prefab->assign_sprite("death_2", player_death_2);
+	player_prefab->assign_sprite("death_3", player_death_3);
 
 	player_prefab->set_sprite("up");
 
@@ -168,15 +182,17 @@ void PlayMode::update(float elapsed) {
 	// update object positions
 	for (size_t i = 0; i < active_entities.size(); i++) {
 		// std::string tag = elem.first;
-		active_entities[i]->update(elapsed);
-		std::cout << "obj " << i << " " << active_entities[i]->position.x << ", " << active_entities[i]->position.y << std::endl;
+		if (!active_entities[i]->dead)
+			active_entities[i]->update(elapsed);
 	}
 
 	// check collisions
 	for (size_t i = 0; i < active_entities.size() - 1; i++) {
-		for (size_t j = i + 1; j < active_entities.size(); j++) {
-			active_entities[i]->collides_with(active_entities[j]);
-		}
+		if (!active_entities[i]->dead)
+			for (size_t j = i + 1; j < active_entities.size(); j++) {
+				if (!active_entities[j]->dead)
+					active_entities[i]->collides_with(active_entities[j]);
+			}
 	}
 
 	// remove all elements that have collided.

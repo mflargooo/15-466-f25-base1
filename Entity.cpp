@@ -3,6 +3,20 @@
 #include <stdexcept>
 #include <memory>
 
+#include <iostream>
+
+bool Entity::collides_with(std::shared_ptr< Entity > other) {
+    glm::highp_vec2 disp = (position - collider.offset) - (other->position - other->collider.offset);
+
+    if (disp.x * disp.x + disp.y * disp.y <= collider.radius + other->collider.radius) {
+        dead = true;
+        other->dead = true;
+
+        return true;
+    }
+    return false;
+}
+
 void Entity::assign_sprite(std::string state, std::shared_ptr< Sprite > sprite) {
     spritesheet[state] = sprite;
 }
@@ -25,8 +39,8 @@ void Entity::set_sprite(std::string state) {
 }
 
 void Entity::update_sprite() {
-        for (size_t i = 0; i < active_sprite->sprite.size; i++) {
-            active_ppu_sprite[i].x = int8_t(position.x) - int8_t(active_sprite->sprite.offsets[i].x);
-            active_ppu_sprite[i].y = int8_t(position.y) - int8_t(active_sprite->sprite.offsets[i].y);
-        }
-    };
+    for (size_t i = 0; i < active_sprite->sprite.size; i++) {
+        active_ppu_sprite[i].x = int8_t(position.x) - int8_t(active_sprite->sprite.offsets[i].x);
+        active_ppu_sprite[i].y = int8_t(position.y) - int8_t(active_sprite->sprite.offsets[i].y);
+    }
+};

@@ -11,6 +11,8 @@
 // for static pointer casts
 #include <memory>
 
+#include <algorithm>
+
 
 // import fixed tiletable
 #include "TileTable.hpp"
@@ -41,7 +43,7 @@ PlayMode::PlayMode() {
 	};
 
 	// setup generic tank and bullet sprites to be used across player and enemies
-	GenericSprite tank_up, tank_down, tank_left, tank_right, bullet;
+	GenericSprite tank_up, tank_down, tank_left, tank_right, explosion_0, explosion_1, explosion_2, explosion_3, bullet;
 	tank_up.tile_idxs = { (uint8_t) 0, (uint8_t) 1, (uint8_t) 8, (uint8_t) 9 };
 	tank_down.tile_idxs = { (uint8_t) 2, (uint8_t) 3, (uint8_t) 10, (uint8_t) 11 };
 	tank_left.tile_idxs = { (uint8_t) 4, (uint8_t) 5, (uint8_t) 12, (uint8_t) 13 };
@@ -49,7 +51,15 @@ PlayMode::PlayMode() {
 
 	bullet.tile_idxs = { (uint8_t) 16 };
 
+	explosion_0 = { (uint8_t) 16, (uint8_t) 17, (uint8_t) 24, (uint8_t) 25 };
+	explosion_1 = { (uint8_t) 26, (uint8_t) 27, (uint8_t) 28, (uint8_t) 29 };
+	explosion_2 = { (uint8_t) 28, (uint8_t) 29, (uint8_t) 32, (uint8_t) 33 };
+	explosion_3 = { (uint8_t) 30, (uint8_t) 31, (uint8_t) 34, (uint8_t) 35 };
+
 	tank_up.offsets = tank_down.offsets = tank_left.offsets = tank_right.offsets = typical_offsets;
+	explosion_0.offsets = explosion_1.offsets = explosion_2.offsets = explosion_3.offsets = typical_offsets;
+
+	explosion_0.size = explosion_1.size = explosion_2.size = explosion_3.size = 4;
 	tank_up.size = tank_down.size = tank_left.size = tank_right.size = 4;
 
 	bullet.offsets = {
@@ -70,6 +80,9 @@ PlayMode::PlayMode() {
 	// create bullet prefab
 	std::shared_ptr< Entities::Bullet > bullet_prefab = std::make_shared< Entities::Bullet >();
 	entities["bullet"] = std::static_pointer_cast< Entity >(bullet_prefab);
+
+	bullet_prefab->collider.offset = glm::highp_vec2(0.f);
+	bullet_prefab->collider.radius = 5.f;
 	bullet_prefab->assign_sprite("0", std::make_shared< Sprite >(Sprite(generic_sprites["bullet"], player_palette)));
 
 	bullet_prefab->set_sprite("0");
@@ -79,7 +92,8 @@ PlayMode::PlayMode() {
 	std::shared_ptr< Entities::Player > player_prefab = std::make_shared< Entities::Player >();
 	entities["player"] = std::static_pointer_cast< Entity >(player_prefab);
 
-
+	player_prefab->collider.offset = glm::highp_vec2(0.f);
+	player_prefab->collider.radius = 20.f;
 
 	std::shared_ptr< Sprite > player_up = std::make_shared< Sprite >(Sprite(generic_sprites["tank_up"], player_palette));
 	std::shared_ptr< Sprite > player_down = std::make_shared< Sprite >(Sprite(generic_sprites["tank_down"], player_palette));
@@ -146,14 +160,34 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
-	if (player) {
-		player->buttons_pressed = ((left.pressed & 0b1) << 4) | ((right.pressed & 0b1) << 3) | ((down.pressed & 0b1) << 2) | ((up.pressed & 0b1) << 1) | (space.pressed & 0b1);
+	if (auto weak_player = player.lock()) {
+		weak_player->buttons_pressed = ((left.pressed & 0b1) << 4) | ((right.pressed & 0b1) << 3) | ((down.pressed & 0b1) << 2) | ((up.pressed & 0b1) << 1) | (space.pressed & 0b1);
 	}
-	
+	else return;
+
+	// update object positions
 	for (size_t i = 0; i < active_entities.size(); i++) {
 		// std::string tag = elem.first;
 		active_entities[i]->update(elapsed);
+		std::cout << "obj " << i << " " << active_entities[i]->position.x << ", " << active_entities[i]->position.y << std::endl;
 	}
+
+	// check collisions
+	for (size_t i = 0; i < active_entities.size() - 1; i++) {
+		for (size_t j = i + 1; j < active_entities.size(); j++) {
+			active_entities[i]->collides_with(active_entities[j]);
+		}
+	}
+
+	// remove all elements that have collided.
+	// Erase-remove_if idiom from wikipedia - https://en.wikipedia.org/wiki/Erase%E2%80%93remove_idiom
+	active_entities.erase(
+		std::remove_if(
+			active_entities.begin(), active_entities.end(), [elapsed](std::shared_ptr< Entity > entity) {
+			return entity->dead && entity->death(elapsed);
+		}),
+		active_entities.end()
+	);
 
 	//reset button press counters:
 	left.downs = 0;
@@ -193,9 +227,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		sprites_drawn += entity.active_ppu_sprite.size();
 	}
 
-	std::cout << sprites_drawn << ", " << entity_cycle << std::endl;
+	if (sprites_drawn < 64) {
+		entity_cycle = 0;
 
-	if (sprites_drawn < 64) entity_cycle = 0;
+		for (size_t i = sprites_drawn; i < 64; i++) {
+			ppu.sprites[i].y = 250;
+		}
+	}
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);

@@ -33,7 +33,8 @@ struct PlayMode : Mode {
 	glm::vec2 player_at = glm::vec2(0.0f);
 	*/
 
-	std::shared_ptr< Entities::Player > player;
+	std::vector< PPU466::Sprite > player_sprites;
+	std::weak_ptr< Entities::Player > player;
 	std::vector< std::shared_ptr< Entity > > active_entities;
 
 	//----- drawing handled by PPU466 -----

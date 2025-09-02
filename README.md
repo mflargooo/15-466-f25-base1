@@ -1,34 +1,37 @@
 # Operation Temperature Control
 
-Author: Matthew Largo
+## Author: Matthew Largo
 
-Design: A Wii Play Tanks!-inspired bullet hell, where you must manage your actions to avoid overheating!
-
-Screen Shot:
+### A Wii Play Tanks!-inspired bullet hell, where you must manage your actions to avoid overheating!
 
 ![Screen Shot](screenshot.png)
 
-How Your Asset Pipeline Works:
+## How Your Asset Pipeline Works:
 
 Index spritesheets > Python script > 4096 byte fixed tile table > PPU466
 
-Spritesheets ([link](assets/tank.png), [link]assets/explosion.png) were generated in color mode "Indexed" using Aseprite and passed as arguments
-to the python script [link](tools/indexed_to_ppu.py) (as python tools/indexed_to_ppu.py assets/tank.png assets/explosion.png) to obtain a 4096 byte fixed tile table.
+Spritesheets ([link](assets/tank.png)assets/tank.png, [link](assets/explosion.png)assets/explosion.png) were generated in color mode "Indexed" using Aseprite and passed as arguments
+to the python script [link](tools/indexed_to_ppu.py)tools/indexed_to_ppu.py (as python tools/indexed_to_ppu.py assets/tank.png assets/explosion.png) to obtain a 4096 byte fixed tile table.
 
-The python script [link](tools/indexed_to_ppu.py) require spritesheets to have dimensions divisible by 8, from which they are broken up into 8x8 chunks. The script populates the tile table with tiles from the spritesheets in the order of they were provided; within each spritesheet, tiles are indexed in left-to-right, top-to-bottom order. The script maintains the convention that index 0 is a color with alpha value 0, and thus ignores 8x8 empty tiles whose pixels are all colored with index 0. All nonempty tiles are populated contiguously in the tile table. 
+The script [link](tools/indexed_to_ppu.py)tools/indexed_to_ppu.py require spritesheets to have dimensions divisible by 8, from which they are broken up into 8x8 chunks. The script populates the tile table with tiles from the spritesheets in the order of they were provided; within each spritesheet, tiles are indexed in left-to-right, top-to-bottom order. The script maintains the convention that index 0 is a color with alpha value 0, and thus ignores 8x8 empty tiles whose pixels are all colored with index 0. All nonempty tiles are populated contiguously in the tile table. 
 
-The user can provide as many spritesheets to [link](tools/indexed_to_ppu.py) as they desire, so long as the sum of the number of nonempty is less than or equal to 256
+The user can provide as many spritesheets to [link](tools/indexed_to_ppu.py)tools/indexed_to_ppu.py as they desire, so long as the sum of the number of nonempty is less than or equal to 256
 
-Controls:
+## Controls:
 
 Arrow Up - Move Up
+
 Arrow Left - Move Left
+
 Arrow Right - Move Right
+
 Arrow Down - Move Down
+
 Space - Shoot
+
 Escape - Quit
 
-How To Play:
+## How To Play:
 
 Move around to dodge the incoming fire and survive as long as you can! If you are skilled enough, you can launch a projectile of your own to collide with and destroy incoming fire. BUT BEWARE! The more actions you take, the more strain you put on your engine and the hotter it becomes. 
 

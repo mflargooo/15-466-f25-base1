@@ -1,6 +1,6 @@
 # Operation Temperature Control
 
-## Author: Matthew Largo
+### Author: Matthew Largo
 
 ### A Wii Play Tanks!-inspired bullet hell, where you must manage your actions to avoid overheating!
 
@@ -11,7 +11,7 @@
 Index spritesheets > Python script > 4096 byte fixed tile table > PPU466
 
 Spritesheets ([assets/tank.png](assets/tank.png), [assets/explosion.png](assets/explosion.png)) were generated in color mode "Indexed" using Aseprite and passed as arguments
-to the python script [tools/indexed_to_ppu.py]tools/indexed_to_ppu.py (as '''python tools/indexed_to_ppu.py assets/tank.png assets/explosion.png''') to obtain a 4096 byte fixed tile table.
+to the python script [tools/indexed_to_ppu.py](tools/indexed_to_ppu.py) (as '''python tools/indexed_to_ppu.py assets/tank.png assets/explosion.png''') to obtain a 4096 byte fixed tile table.
 
 The script [tools/indexed_to_ppu.py](tools/indexed_to_ppu.py) require spritesheets to have dimensions divisible by 8, from which they are broken up into 8x8 chunks. The script populates the tile table with tiles from the spritesheets in the order of they were provided; within each spritesheet, tiles are indexed in left-to-right, top-to-bottom order. The script maintains the convention that index 0 is a color with alpha value 0, and thus ignores 8x8 empty tiles whose pixels are all colored with index 0. All nonempty tiles are populated contiguously in the tile table. 
 
